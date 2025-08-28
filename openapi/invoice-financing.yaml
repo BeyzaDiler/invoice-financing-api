@@ -1,0 +1,184 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: Invoice Financing App
+  description: >
+    This API allows SMEs to upload invoices and request early financing based on those invoices.
+    It includes invoice submission, buyer verification, financing application, and status monitoring.
+
+host: api.faturafinans.com
+basePath: /
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  /invoices:
+    post:
+      summary: Upload a new invoice
+      description: Submit a new invoice for financing evaluation.
+      parameters:
+        - in: body
+          name: invoice
+          required: true
+          schema:
+            $ref: '#/definitions/InvoiceInput'
+      responses:
+        201:
+          description: Invoice successfully submitted
+          schema:
+            $ref: '#/definitions/Invoice'
+        400:
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/Error'
+    get:
+      summary: List all invoices
+      description: Returns a list of all uploaded invoices.
+      responses:
+        200:
+          description: A list of invoices
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Invoice'
+
+  /invoices/{invoiceId}:
+    get:
+      summary: Get invoice by ID
+      description: Retrieves a single invoice using its unique ID.
+      parameters:
+        - in: path
+          name: invoiceId
+          type: string
+          required: true
+          description: The ID of the invoice to retrieve
+      responses:
+        200:
+          description: Invoice found
+          schema:
+            $ref: '#/definitions/Invoice'
+        404:
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/Error'
+
+  /invoices/{invoiceId}/verify:
+    post:
+      summary: Verify invoice by buyer
+      description: Marks the specified invoice as verified by the buyer.
+      parameters:
+        - in: path
+          name: invoiceId
+          type: string
+          required: true
+          description: The ID of the invoice to verify
+      responses:
+        200:
+          description: Invoice verified successfully
+          schema:
+            $ref: '#/definitions/Invoice'
+        404:
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/Error'
+
+  /financing/apply:
+    post:
+      summary: Apply for financing
+      description: Submits a financing request based on a verified invoice.
+      parameters:
+        - in: body
+          name: financingApplication
+          required: true
+          schema:
+            $ref: '#/definitions/FinancingApplicationInput'
+      responses:
+        201:
+          description: Financing application submitted
+          schema:
+            $ref: '#/definitions/FinancingApplication'
+        404:
+          description: Invoice not found or not verified
+          schema:
+            $ref: '#/definitions/Error'
+
+definitions:
+  InvoiceInput:
+    type: object
+    properties:
+      invoiceNumber:
+        type: string
+      issueDate:
+        type: string
+        format: date
+      dueDate:
+        type: string
+        format: date
+      amount:
+        type: number
+        format: float
+      currency:
+        type: string
+      buyerCompany:
+        type: string
+      sellerCompany:
+        type: string
+    required:
+      - invoiceNumber
+      - issueDate
+      - dueDate
+      - amount
+      - currency
+      - buyerCompany
+      - sellerCompany
+
+  Invoice:
+    allOf:
+      - $ref: '#/definitions/InvoiceInput'
+      - type: object
+        properties:
+          id:
+            type: string
+          status:
+            type: string
+            enum: [submitted, verified, financed, rejected]
+        required:
+          - id
+          - status
+
+  FinancingApplicationInput:
+    type: object
+    properties:
+      invoiceId:
+        type: string
+    required:
+      - invoiceId
+
+  FinancingApplication:
+    type: object
+    properties:
+      id:
+        type: string
+      invoiceId:
+        type: string
+      status:
+        type: string
+        enum: [pending, approved, declined, disbursed]
+    required:
+      - id
+      - invoiceId
+      - status
+
+  Error:
+    type: object
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    required:
+      - message 
